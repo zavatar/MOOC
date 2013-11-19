@@ -1,16 +1,22 @@
-import java.util.*;
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.HashMap;
 
 public class WordNet {
-    
-    private final ArrayList<String> Glosses;
-    private final ArrayList<String> Nouns;
-    private final Hashtable<String, Integer> HTable;
+
+    private final SAP mSap;
+    private final ArrayList<String> mSynsets;
+    private final ArrayList<String> mGlosses;
+    private final HashSet<String> mNouns;
+    private final HashMap<String, ArrayList<Integer>> mNounTable;
     
     // constructor takes the name of the two input files
     public WordNet(String synsets, String hypernyms) {
-        Glosses = new ArrayList<String>();
-        Nouns = new ArrayList<String>();
-        HTable = new Hashtable<String, Integer>();
+        mSynsets = new ArrayList<String>();
+        mGlosses = new ArrayList<String>();
+        mNouns = new HashSet<String>();
+        mNounTable = new HashMap<String, ArrayList<Integer>>();
         
         In synsetsin = new In(synsets);
         while (synsetsin.hasNextLine()) {
@@ -20,14 +26,17 @@ public class WordNet {
             String synset = s.next();
             String gloss = s.next();
             String[] tokens = synset.split(" ");
-            Glosses.add(gloss);
+            mSynsets.add(synset);
+            mGlosses.add(gloss);
             for (String w : tokens) {
-                Nouns.add(w);
-                HTable.put(w, new Integer(id));
+                if (mNouns.add(w))
+                    mNounTable.put(w, new ArrayList<Integer>());
+                mNounTable.get(w).add(id);
             }
         }
         
-        Digraph G = new Digraph(Glosses.size());
+        Digraph G = new Digraph(mSynsets.size());
+        mSap = new SAP(G);
         
         In hypernymsin = new In(hypernyms);
         while (hypernymsin.hasNextLine()) {
@@ -50,25 +59,25 @@ public class WordNet {
             throw new IllegalArgumentException();
         }
         else {
-            StdOut.println("No cycle");
+            //StdOut.println("No cycle");
         }
     }
 
     // the set of nouns (no duplicates), returned as an Iterable
     public Iterable<String> nouns() {
-        return Nouns;
+        return mNouns;
     }
 
     // is the word a WordNet noun?
     public boolean isNoun(String word) {
-        return HTable.get(word) != null;
+        return mNouns.contains(word);
     }
 
     // distance between nounA and nounB (defined below)
     public int distance(String nounA, String nounB) {
         if (!(isNoun(nounA) && isNoun(nounB)))
             throw new IllegalArgumentException();
-        return 0;
+        return mSap.length(mNounTable.get(nounA), mNounTable.get(nounB));
     }
 
     // a synset (second field of synsets.txt) that is the common ancestor of nounA and nounB
@@ -76,12 +85,18 @@ public class WordNet {
     public String sap(String nounA, String nounB) {
         if (!(isNoun(nounA) && isNoun(nounB)))
             throw new IllegalArgumentException();
-        return "";
+        return mSynsets.get(mSap.ancestor(mNounTable.get(nounA), mNounTable.get(nounB)));
     }
 
     // for unit testing of this class
     public static void main(String[] args) {
-        //WordNet WN = new WordNet(args[0], args[1]);
-        WordNet WN = new WordNet("synsets.txt", "hypernyms.txt");
+        WordNet WN = new WordNet(args[0], args[1]);
+        while (!StdIn.isEmpty()) {
+            String v = StdIn.readString();
+            String w = StdIn.readString();
+            int dist   = WN.distance(v, w);
+            String syn = WN.sap(v, w);
+            StdOut.printf("distance = %d, synset = %s\n", dist, syn);
+        }
     }
 }
