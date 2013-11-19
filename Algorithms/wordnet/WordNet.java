@@ -1,6 +1,5 @@
 import java.util.Scanner;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.HashMap;
 
 public class WordNet {
@@ -8,14 +7,12 @@ public class WordNet {
     private final SAP mSap;
     private final ArrayList<String> mSynsets;
     private final ArrayList<String> mGlosses;
-    private final HashSet<String> mNouns;
     private final HashMap<String, ArrayList<Integer>> mNounTable;
     
     // constructor takes the name of the two input files
     public WordNet(String synsets, String hypernyms) {
         mSynsets = new ArrayList<String>();
         mGlosses = new ArrayList<String>();
-        mNouns = new HashSet<String>();
         mNounTable = new HashMap<String, ArrayList<Integer>>();
         
         In synsetsin = new In(synsets);
@@ -29,14 +26,13 @@ public class WordNet {
             mSynsets.add(synset);
             mGlosses.add(gloss);
             for (String w : tokens) {
-                if (mNouns.add(w))
+                if (mNounTable.get(w) == null)
                     mNounTable.put(w, new ArrayList<Integer>());
                 mNounTable.get(w).add(id);
             }
         }
         
         Digraph G = new Digraph(mSynsets.size());
-        mSap = new SAP(G);
         
         In hypernymsin = new In(hypernyms);
         while (hypernymsin.hasNextLine()) {
@@ -48,6 +44,8 @@ public class WordNet {
                 G.addEdge(u, v);
             }
         }
+        
+        mSap = new SAP(G);
         
         DirectedCycle finder = new DirectedCycle(G);
         if (finder.hasCycle()) {
@@ -65,12 +63,12 @@ public class WordNet {
 
     // the set of nouns (no duplicates), returned as an Iterable
     public Iterable<String> nouns() {
-        return mNouns;
+        return mNounTable.keySet();
     }
 
     // is the word a WordNet noun?
     public boolean isNoun(String word) {
-        return mNouns.contains(word);
+        return mNounTable.containsKey(word);
     }
 
     // distance between nounA and nounB (defined below)

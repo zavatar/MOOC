@@ -6,8 +6,8 @@ public class SAP {
     private final Digraph mG;
 
     // constructor takes a digraph (not necessarily a DAmG)
-    public SAP(Digraph mG) {
-        this.mG = mG;
+    public SAP(Digraph G) {
+        mG = new Digraph(G); //this.mG = mG;
     }
 
     // length of shortest ancestral path between v and w; -1 if no such path
@@ -52,62 +52,52 @@ public class SAP {
     }
 
     private void sap(Iterable<Integer> v, Iterable<Integer> w, int[] ret) {
-        boolean[] color = new boolean[mG.V()];
-        int[] marked = new int[mG.V()];
-        Arrays.fill(marked, -1);
+        int[] marked1 = new int[mG.V()];
+        Arrays.fill(marked1, -1);
+        Queue<Integer> q = new Queue<Integer>();
+        for (int i : v) {
+            rangeCheck(i);
+            marked1[i] = 0;
+            q.enqueue(i);
+        }
+        while (!q.isEmpty()) {
+            int i = q.dequeue();
+            for (int j : mG.adj(i)) {
+                if (marked1[j] == -1) {
+                    marked1[j] = marked1[i]+1;
+                    q.enqueue(j);
+                }
+            }
+        }
+
         ret[0] = -1;
         ret[1] = Integer.MAX_VALUE;
 
-        Queue<Integer> qv = new Queue<Integer>();
-        for (int i : v) {
+        int[] marked2 = new int[mG.V()];
+        Arrays.fill(marked2, -1);
+        for (int i : w) {
             rangeCheck(i);
-            color[i] = true;
-            marked[i] = 0;
-            qv.enqueue(i);
-        }
-        Queue<Integer> qw = new Queue<Integer>();
-        for (int j : w) {
-            rangeCheck(j);
-            color[j] = false;
-            if (marked[j] != -1) {
-                ret[0] = j;
-                ret[1] = 0;
-                return;
+            marked2[i] = 0;
+            if (marked1[i] != -1 && marked1[i]+marked2[i] < ret[1]) {
+                ret[0] = i;
+                ret[1] = marked1[i]+marked2[i];
             }
-            marked[j] = 0;
-            qw.enqueue(j);
+            q.enqueue(i);
+        }
+        while (!q.isEmpty()) {
+            int i = q.dequeue();
+            for (int j : mG.adj(i)) {
+                if (marked2[j] == -1) {
+                    marked2[j] = marked2[i]+1;
+                    if (marked1[j] != -1 && marked1[j]+marked2[j] < ret[1]) {
+                        ret[0] = j;
+                        ret[1] = marked1[j]+marked2[j];
+                    }
+                    q.enqueue(j);
+                }
+            }
         }
 
-        int level = 0;
-        while (!(qv.isEmpty() && qw.isEmpty())) {
-            while (!qv.isEmpty() && marked[qv.peek()] == level) {
-                int i = qv.dequeue();
-                for (int j : mG.adj(i)) {
-                    if (marked[j] == -1) {
-                        color[j] = true;
-                        marked[j] = level+1;
-                        qv.enqueue(j);
-                    } else if (!color[j] && ret[1] > marked[j] + level + 1) {
-                        ret[0] = j;
-                        ret[1] = marked[j] + level + 1;
-                    }
-                }
-            }
-            while (!qw.isEmpty() && marked[qw.peek()] == level) {
-                int i = qw.dequeue();
-                for (int j : mG.adj(i)) {
-                    if (marked[j] == -1) {
-                        color[j] = false;
-                        marked[j] = level+1;
-                        qw.enqueue(j);
-                    } else if (color[j] && ret[1] > marked[j] + level + 1) {
-                        ret[0] = j;
-                        ret[1] = marked[j] + level + 1;
-                    }
-                }
-            }
-            level++;
-        }
         if (ret[0] == -1) ret[1] = -1;
     }
 
