@@ -58,7 +58,7 @@ public class AcyclicSP {
 
         // visit vertices in toplogical order
         Topological topological = new Topological(G);
-        if (topological.hasOrder())
+        if (!topological.hasOrder())
             throw new IllegalArgumentException("Digraph is not acyclic.");
         for (int v : topological.order()) {
             for (DirectedEdge e : G.adj(v))
