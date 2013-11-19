@@ -1,4 +1,3 @@
-import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -11,54 +10,56 @@ public class WordNet {
     
     // constructor takes the name of the two input files
     public WordNet(String synsets, String hypernyms) {
+        //long start, end; 
+        //start = System.currentTimeMillis();
+        
         mSynsets = new ArrayList<String>();
         mGlosses = new ArrayList<String>();
         mNounTable = new HashMap<String, ArrayList<Integer>>();
         
         In synsetsin = new In(synsets);
-        while (synsetsin.hasNextLine()) {
-            Scanner s = new Scanner(synsetsin.readLine());
-            s.useDelimiter(",");
-            int id = s.nextInt();
-            String synset = s.next();
-            String gloss = s.next();
-            String[] tokens = synset.split(" ");
-            mSynsets.add(synset);
-            mGlosses.add(gloss);
-            for (String w : tokens) {
+        while (!synsetsin.isEmpty()) {
+            String[] line = synsetsin.readLine().split(",");
+            int id = Integer.parseInt(line[0]);
+            mSynsets.add(line[1]);
+            mGlosses.add(line[2]);
+            for (String w : line[1].split(" ")) {
                 if (mNounTable.get(w) == null)
                     mNounTable.put(w, new ArrayList<Integer>());
                 mNounTable.get(w).add(id);
             }
         }
         
-        Digraph G = new Digraph(mSynsets.size());
+        //end = System.currentTimeMillis();
+        //System.out.println("Time: "+(end-start)+"ms");
+        //start = System.currentTimeMillis();
+        
+        Digraph g = new Digraph(mSynsets.size());
         
         In hypernymsin = new In(hypernyms);
-        while (hypernymsin.hasNextLine()) {
-            Scanner s = new Scanner(hypernymsin.readLine());
-            s.useDelimiter(",");
-            int u = s.nextInt();
-            while (s.hasNext()) {
-                int v = s.nextInt();
-                G.addEdge(u, v);
-            }
+        while (!hypernymsin.isEmpty()) {
+            String[] line = hypernymsin.readLine().split(",");
+            int u = Integer.parseInt(line[0]);
+            for (int i = 1; i < line.length; i++)
+                g.addEdge(u, Integer.parseInt(line[i]));
         }
         
-        mSap = new SAP(G);
+        mSap = new SAP(g);
         
-        DirectedCycle finder = new DirectedCycle(G);
-        if (finder.hasCycle()) {
-            StdOut.print("Cycle: ");
-            for (int v : finder.cycle()) {
-                StdOut.print(v + " ");
-            }
-            StdOut.println();
+        //end = System.currentTimeMillis();
+        //System.out.println("Time: "+(end-start)+"ms");
+        //start = System.currentTimeMillis();
+        
+        DirectedCycle finder = new DirectedCycle(g);
+        if (finder.hasCycle())
             throw new IllegalArgumentException();
-        }
-        else {
-            //StdOut.println("No cycle");
-        }
+
+        int numRoots = 0;
+        for (int i = 0; i < g.V(); i++)
+            if (!g.adj(i).iterator().hasNext())
+                numRoots++;
+        if (numRoots != 1)
+            throw new IllegalArgumentException();
     }
 
     // the set of nouns (no duplicates), returned as an Iterable
