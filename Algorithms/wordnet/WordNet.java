@@ -65,11 +65,19 @@ public class WordNet {
     }
 
     // distance between nounA and nounB (defined below)
-    //public int distance(String nounA, String nounB) {}
+    public int distance(String nounA, String nounB) {
+        if (!(isNoun(nounA) && isNoun(nounB)))
+            throw new IllegalArgumentException();
+        return 0;
+    }
 
     // a synset (second field of synsets.txt) that is the common ancestor of nounA and nounB
     // in a shortest ancestral path (defined below)
-    //public String sap(String nounA, String nounB) {}
+    public String sap(String nounA, String nounB) {
+        if (!(isNoun(nounA) && isNoun(nounB)))
+            throw new IllegalArgumentException();
+        return "";
+    }
 
     // for unit testing of this class
     public static void main(String[] args) {
