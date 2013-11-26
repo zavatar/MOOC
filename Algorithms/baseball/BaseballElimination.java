@@ -1,3 +1,5 @@
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class BaseballElimination {
@@ -40,7 +42,7 @@ public class BaseballElimination {
 
     // all teams
     public Iterable<String> teams() {
-        return Ids.keySet(); // Teams
+        return Arrays.asList(Teams);
     }
 
     private void checkTeam(String team) {
@@ -76,17 +78,55 @@ public class BaseballElimination {
     // is given team eliminated?
     public boolean isEliminated(String team) {
         checkTeam(team);
-        return false;
+        return certificateOfElimination(team) != null;
     }
 
     // subset R of teams that eliminates given team; null if not eliminated
     public Iterable<String> certificateOfElimination(String team) {
         checkTeam(team);
-        return null;
+        int id = Ids.get(team);
+
+        // Trivial elimination
+        for (int i = 0; i < N; i++)
+            if (i != id && W[id] + R[id] < W[i])
+                return Arrays.asList(Teams[i]);
+        
+        int V = N + (N-1)*(N-2)/2 + 2;
+        int s = V - 2;
+        int t = V - 1;
+        FlowNetwork g = new FlowNetwork(V);
+
+        for (int i = 0, v = N; i < N; i++) {
+            if (i == id) continue;
+            for (int j = i+1; j < N; j++) {
+                if (j == id) continue;
+                // connect s to game vertices
+                g.addEdge(new FlowEdge(s, v, G[i][j]));
+                // connect game vertices to team vertices
+                g.addEdge(new FlowEdge(v, i, G[i][j]));
+                g.addEdge(new FlowEdge(v, j, G[i][j]));
+                v++;
+            }
+        }
+
+        for (int i = 0; i < N; i++) {
+            // connect team vertices to t
+            if (i != id) g.addEdge(new FlowEdge(i, t, W[id] + R[id] - W[i]));
+        }
+
+        FordFulkerson maxflow = new FordFulkerson(g, s, t);
+
+        ArrayList<String> ret = new ArrayList<String>();
+        for (int v = 0; v < N; v++) {
+            if (maxflow.inCut(v)) ret.add(Teams[v]);
+        }
+
+        return ret.isEmpty() ? null : ret;
     }
 
     public static void main(String[] args) {
     BaseballElimination division = new BaseballElimination(args[0]);
+
     for (String team : division.teams()) {
         if (division.isEliminated(team)) {
             StdOut.print(team + " is eliminated by the subset R = { ");
