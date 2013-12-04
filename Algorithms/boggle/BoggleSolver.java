@@ -3,18 +3,56 @@ import java.util.ArrayList;
 
 public class BoggleSolver
 {
-    private static int[] scores = {0, 0, 0, 1, 1, 2, 3, 5, 11};
+    private static final int[] scores = {0, 0, 0, 1, 1, 2, 3, 5, 11};
+    private static final int R = 26;
 
-    private final TST<Integer> dicts;
+    private static class Node {
+        private Object val;
+        private Node[] next = new Node[R];
+    }
+
+    private Node root = new Node();
+
     private BoggleBoard board;
     private int[][] colors;
+
+    private boolean contains(String key) {
+        return get(key) != null;
+    }
+
+    private Integer get(String key) {
+        Node x = get(root, key, 0);
+        if (x == null) return null;
+        return (Integer) x.val;
+    }
+
+    private Node get(Node x, String key, int d) {
+        if (x == null) return null;
+        if (d == key.length()) return x;
+        char j = key.charAt(d);
+        return get(x.next[j-'A'], key, d+1);
+    }
+
+    private void put(String key, Integer val) {
+        root = put(root, key, val, 0);
+    }
+
+    private Node put(Node x, String key, Integer val, int d) {
+        if (x == null) x = new Node();
+        if (d == key.length()) {
+            x.val = val;
+            return x;
+        }
+        char j = key.charAt(d);
+        x.next[j-'A'] = put(x.next[j-'A'], key, val, d+1);
+        return x;
+    }
 
     // Initializes the data structure using the given array of strings as the dictionary.
     // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
     public BoggleSolver(String[] dictionary) {
-        dicts = new TST<Integer>();
         for (String word : dictionary)
-            dicts.put(word, 0);
+            put(word, 0);
     }
 
     private void fillColors(int color) {
@@ -22,68 +60,75 @@ public class BoggleSolver
             Arrays.fill(colors[i], color);
     }
 
-    private boolean isInBoard(int r, int c) {
-        return (r >= 0 && r < board.rows()) && (c >= 0 && c < board.cols());
+    private boolean isInBoard(int i, int j) {
+        return (i >= 0 && i < board.rows()) && (j >= 0 && j < board.cols());
     }
 
-    private boolean DFS(int r, int c, String w, int d) {
-        if (board.getLetter(r, c) == w.charAt(d)) {
-            if (d == w.length() - 1) {
-                if (w.length() < 3 || w.charAt(d) == 'Q') return false;
-                dicts.put(w, scoreOf(w));
-                return true;
-            }
-            if (w.charAt(d) == 'Q') {
-                d++;
-                if (w.charAt(d) != 'U')
-                    return false;
-            }
+    private void DFA(int i, int j, Node x, String key, ArrayList<String> ret, ArrayList<Node> nodes) {
+        char ch = board.getLetter(i, j);
+        if (ch == 'Q') {
+            if (x.next['Q'-'A'] != null)
+                DFS(i, j, x.next['Q'-'A'].next['U'-'A'], key + "QU", ret, nodes);
         } else
-            return false;
+            DFS(i, j, x.next[ch-'A'], key + ch, ret, nodes);
+    }
 
-        colors[r][c] = 1;
-        for (int y = -1; y <= 1; y++) {
-            for (int x = -1; x <= 1; x++) {
-                int m = r + y;
-                int n = c + x;
-                if (isInBoard(m, n))
-                    if (colors[m][n] == 0 && DFS(m, n, w, d+1))
-                        return true;
+    private void DFS(int i, int j, Node x, String key, ArrayList<String> ret, ArrayList<Node> nodes) {
+        if (x == null) return;
+        int l = key.length();
+        if (x.val == 0 && l >= 3) {
+            ret.add(key);
+            nodes.add(x);
+            x.val = 1;
+        }
+
+        colors[i][j] = 1;
+        for (int r = -1; r <= 1; r++) {
+            for (int c = -1; c <= 1; c++) {
+                int m = i + r;
+                int n = j + c;
+                if (isInBoard(m, n)) {
+                    if (colors[m][n] == 0) {
+                        DFA(m, n, x, key, ret, nodes);
+                    }
+                }
             }
         }
-        colors[r][c] = 0;
-        return false;
+        colors[i][j] = 0;
     }
 
-    private boolean search(String w) {
-        fillColors(0);
+    private Iterable<String> parallelSearch() {
+        ArrayList<String> ret = new ArrayList<String>();
+        ArrayList<Node> nodes = new ArrayList<Node>();
+        // parallel DFS search Board and Trie
         for (int i = 0; i < board.rows(); i++) {
             for (int j = 0; j < board.cols(); j++) {
-                if (DFS(i, j, w, 0))
-                    return true;
+                DFA(i, j, root, "", ret, nodes);
             }
         }
-        return false;
+        for (Node v : nodes) v.val = 0;
+        return ret;
     }
 
     // Returns the set of all valid words in the given Boggle board, as an Iterable.
     public Iterable<String> getAllValidWords(BoggleBoard board) {
         this.board = board;
         colors = new int[board.rows()][board.cols()];
-        ArrayList<String> ret = new ArrayList<String>();
-        for (String word : dicts.keys()) {
-            if (search(word))
-                ret.add(word);
-        }
-        return ret;
+        fillColors(0);
+        return parallelSearch();
+    }
+
+    private int score(String word) {
+        return scores[Math.min(scores.length-1, word.length())];
     }
 
     // Returns the score of the given word if it is in the dictionary, zero otherwise.
     // (You can assume the word contains only the uppercase letters A through Z.)
     public int scoreOf(String word) {
-        Integer score = dicts.get(word);
-        if (score == null) return 0;
-        return scores[Math.min(scores.length-1, word.length())];
+        if (contains(word))
+            return score(word);
+        else
+            return 0;
     }
 
     public static void main(String[] args)
