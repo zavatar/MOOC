@@ -34,16 +34,39 @@ Suggested milestones for incremental development:
  -Fix main() to use the extract_names list
 """
 
-def extract_names(filename):
+def extract_names(filename,summary):
   """
   Given a file name for baby.html, returns a list starting with the year string
   followed by the name-rank strings in alphabetical order.
   ['2006', 'Aaliyah 91', Aaron 57', 'Abagail 895', ' ...]
   """
   # +++your code here+++
-  return
-
-
+  dict={}
+  ret=[]
+  f = open(filename, 'rU')
+  for l in reversed(f.readlines()):
+    match=re.search(r'^<tr align="right"><td>(\d+)</td><td>(\w+)</td><td>(\w+)</td>',l)
+    if match:
+      id = match.group(1)
+      dict[match.group(2)]=id
+      dict[match.group(3)]=id
+    else:
+      year=re.search(r'^<h3 align="center">Popularity in (\d\d\d\d)</h3>$',l)
+      if year:
+        ret.append(year.group(1))
+        #print ret[0]
+  for key in sorted(dict.keys()):
+    ret.append(key+' '+dict[key])
+    #print ret[-1]
+  f.close()
+  list='\n'.join(ret) + '\n'
+  if summary:
+    of = open(filename+'.mine', 'w')
+    of.write(list)
+    of.close()
+  else:
+    print list
+  
 def main():
   # This command-line parsing code is provided.
   # Make a list of command line arguments, omitting the [0] element
@@ -63,6 +86,8 @@ def main():
   # +++your code here+++
   # For each filename, get the names, then either print the text output
   # or write it to a summary file
+  for fname in args[0:]:
+    extract_names(fname,summary)
   
 if __name__ == '__main__':
   main()
