@@ -17,7 +17,17 @@ import commands
 
 # +++your code here+++
 # Write functions and modify main() to call them
-
+def get_special_paths(dir):
+  ret=[]
+  fnames = os.listdir(dir)
+  i=0
+  while i < len(fnames):
+    if not re.search(r'__\w+__',fnames[i]):
+      del fnames[i]
+    else:
+      ret.append(os.path.abspath(os.path.join(dir, fnames[i])))
+    i+=1
+  return ret
 
 
 def main():
@@ -50,6 +60,13 @@ def main():
 
   # +++your code here+++
   # Call your functions
+  list=[]
+  for dir in args[0:]:
+    ret=get_special_paths(dir)
+    for l in ret:
+      list.append(l)
+  for l in list:
+    print l
   
 if __name__ == "__main__":
   main()
