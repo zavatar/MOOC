@@ -46,6 +46,28 @@ import sys
 # Then print_words() and print_top() can just call the utility function.
 
 ###
+def helper(fname):
+  dict = {}
+  f = open(fname, 'rU')
+  for l in f:
+    words=l.split()
+    for w in words:
+      w=w.lower()
+      if w in dict: dict[w]+=1
+      else: dict[w]=1
+  f.close()
+  return dict
+
+def print_words(fname):
+  dict = helper(fname)
+  for key in sorted(dict.keys()):
+    print key, dict[key]
+
+def print_top(fname):
+  dict = helper(fname)
+  items = sorted(dict.items(), key=lambda i:i[1], reverse=True)
+  for i in items[:20]:
+    print i[0], i[1]
 
 # This basic command line argument parsing code is provided and
 # calls the print_words() and print_top() functions which you must define.
