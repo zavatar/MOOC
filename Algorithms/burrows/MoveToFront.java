@@ -1,5 +1,3 @@
-import java.util.Arrays;
-
 public class MoveToFront {
 
     private static char[] initMtf() {
@@ -25,11 +23,12 @@ public class MoveToFront {
                 mtf[k] = c; c = tmp;
                 if (c == in[i]) {
                     mtf[0] = c;
-                    StdOut.print(k);
+                    BinaryStdOut.write(k);
                     break;
                 }
             }
         }
+        BinaryStdOut.flush();
     }
 
     // apply move-to-front decoding, reading from standard input and writing to standard output
@@ -43,11 +42,12 @@ public class MoveToFront {
                 mtf[k] = c; c = tmp;
                 if (k == in[i]) {
                     mtf[0] = c;
-                    StdOut.print(c);
+                    BinaryStdOut.write(c);
                     break;
                 }
             }
         }
+        BinaryStdOut.flush();
     }
 
     // if args[0] is '-', apply move-to-front encoding
