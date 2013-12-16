@@ -60,7 +60,7 @@ def countMistake(X, Y, w):
 def PLA(X, Y, u = 1, index = [], limit = None):
   m = X.shape[0]
   k = X.shape[1]
-  if len(index) != m: index = range(m)
+  if index==[]: index = range(m)
   X = np.concatenate((np.ones((m,1)), X), 1)
   wt = np.zeros(k+1)
   wts = [wt]
@@ -70,10 +70,10 @@ def PLA(X, Y, u = 1, index = [], limit = None):
     mistakes = m
   while True:
     for i in index:
-      if sign(np.dot(wt, X[i])) != Y[i]: break
+      if sign(np.dot(wt, X[i])) != Y[i]:
+        wt = wt + u*Y[i]*X[i]
+        wts.append(wt)
     else: break
-    wt = wt + u*Y[i]*X[i]
-    wts.append(wt)
     if limit != None:
       updates = updates+1
       newmis = _countMistake(X, Y, wt)
@@ -87,14 +87,19 @@ def PLA(X, Y, u = 1, index = [], limit = None):
 
 def Q15(X, Y, u = 1, index = []):
   wts, pocket = PLA(X, Y, u = u, index = index)
+  print LA.norm(wts[-1])
   return len(wts)
 
 def Q16(X, Y, n = 2000, u = 1):
   index = range(X.shape[0])
   sumt = 0
+  avgw = np.zeros(X.shape[1]+1)
   for i in range(n):
     random.shuffle(index)
-    sumt = sumt + Q15(X, Y, u, index)
+    wts, pocket = PLA(X, Y, u = u, index = index)
+    avgw = avgw + wts[-1]
+    sumt = sumt + len(wts)
+  print LA.norm(avgw/n)
   return sumt/n
 
 def Q17(X, Y, n = 2000, u = 1):
@@ -144,11 +149,11 @@ def Q15_17():
   X = data['X'] # m*k
   Y = data['Y'] # m*1
 
-  test2D(X, Y, 0.5)
+  #test2D(X, Y)
 
   print Q15(X, Y)
-  print Q16(X, Y, 20)
-  print Q17(X, Y, 20, 0.5)
+  print Q16(X, Y, 2000)
+  print Q17(X, Y, 2000, 0.5)
 
 def Q18(X, Y, XT, YT, n = 2000):
   index = range(X.shape[0])
@@ -189,9 +194,9 @@ def Q18_20():
   XT = dataT['X'] # t*k
   YT = dataT['Y'] # t*1
 
-  print Q18(X, Y, XT, YT, 10)
-  print Q19(X, Y, XT, YT, 10)
-  print Q20(X, Y, XT, YT, 10)
+  print Q18(X, Y, XT, YT, 200)
+  print Q19(X, Y, XT, YT, 200)
+  print Q20(X, Y, XT, YT, 200)
 
 
 def main():
@@ -200,9 +205,9 @@ def main():
   #saveWebData(hw1_18_test, hw1_18_test_url)
   #sys.exit(0)
   
-  #Q15_17()
+  Q15_17()
 
-  #Q18_20()
+  Q18_20()
 
 if __name__ == '__main__':
   main()
