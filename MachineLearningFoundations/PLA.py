@@ -51,10 +51,8 @@ def expandX(X):
   return np.concatenate((np.ones((X.shape[0],1)), X), 1)
 
 def _getMistakes(eX, Y, w):
-  count = 0
-  for i in range(eX.shape[0]):
-    if sign(np.dot(w, eX[i])) != Y[i]: count = count+1
-  return count
+  y = np.dot(eX, w.T)
+  return len(Y[Y[y > 0] != 1]) + len(Y[Y[y <= 0] != -1])
 
 def getMistakes(X, Y, w):
   eX = expandX(X)
@@ -198,9 +196,9 @@ def Q18_20():
   XT = dataT['X'] # t*k
   YT = dataT['Y'] # t*1
 
-  print Q18(X, Y, XT, YT, 200)
-  print Q19(X, Y, XT, YT, 200)
-  print Q20(X, Y, XT, YT, 200)
+  print Q18(X, Y, XT, YT, 2000)
+  print Q19(X, Y, XT, YT, 2000)
+  print Q20(X, Y, XT, YT, 2000)
 
 
 def main():
