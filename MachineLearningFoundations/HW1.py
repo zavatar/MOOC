@@ -47,42 +47,43 @@ def sign(t):
   if t > 0: return 1
   else: return -1
 
-def _countMistake(X, Y, w):
-  count = 0
-  for i in range(X.shape[0]):
-    if sign(np.dot(w, X[i])) != Y[i]: count = count+1
-  return count
+def expandX(X):
+  return np.concatenate((np.ones((X.shape[0],1)), X), 1)
 
-def countMistake(X, Y, w):
-  X = np.concatenate((np.ones((X.shape[0],1)), X), 1)
-  return _countMistake(X, Y, w)
+def _getMistakes(eX, Y, w):
+  y = np.dot(eX, w.T)
+  return len(Y[Y[y > 0] != 1]) + len(Y[Y[y <= 0] != -1])
+
+def getMistakes(X, Y, w):
+  eX = expandX(X)
+  return _getMistakes(eX, Y, w)
 
 def PLA(X, Y, u = 1, index = [], limit = None):
   m = X.shape[0]
   k = X.shape[1]
   if index==[]: index = range(m)
-  X = np.concatenate((np.ones((m,1)), X), 1)
+  eX = expandX(X)
   wt = np.zeros(k+1)
   wts = [wt]
-  if limit != None:
-    updates = 0
-    pocket = 0
-    mistakes = m
+  mistakes = m
+  pocket = 0
+  updates = 0
+  if _getMistakes(eX, Y, wt) == 0:
+    return wts, pocket
   while True:
     for i in index:
-      if sign(np.dot(wt, X[i])) != Y[i]:
-        wt = wt + u*Y[i]*X[i]
+      if sign(np.dot(wt, eX[i])) != Y[i]:
+        wt = wt + u*Y[i]*eX[i]
         wts.append(wt)
-    else: break
-    if limit != None:
-      updates = updates+1
-      newmis = _countMistake(X, Y, wt)
-      if newmis < mistakes:
-        mistakes = newmis
-        pocket = len(wts)-1
-        if mistakes == 0: break
-      if updates >= limit: break
-  if limit == None: pocket = len(wts)-1
+        newmistakes = _getMistakes(eX, Y, wt)
+        if newmistakes < mistakes:
+          mistakes = newmistakes
+          pocket = len(wts)-1
+          if mistakes == 0: break
+        updates = updates+1
+        if limit != None and updates >= limit: break
+    else: continue
+    break
   return wts, pocket
 
 def Q15(X, Y, u = 1, index = []):
@@ -125,12 +126,13 @@ def test2D(X, Y, u = 1):
     R = max(R, LA.norm(_x))
 
   print P, R, P/LA.norm(wf)
-  wts, pocket = PLA(x, y, u)
+  wts, pocket = PLA(x, y, u = u)
+  del wts[0]
   T = len(wts)
+  if T == 0: return
   print wts[-1]
   print T
 
-  if wts[-1][2] == 0: sys.exit(0)
   t = np.arange(0, 1, 0.01)
   plt.plot(t, -wf[1]/wf[2]*t-wf[0]/wf[2], '-')
   plt.plot(x[y==1,0], x[y==1,1], 'o', x[y==-1,0], x[y==-1,1], '+')
@@ -140,8 +142,8 @@ def test2D(X, Y, u = 1):
 
   plt.plot(range(T), np.dot(wts,wf), '-')
   plt.plot(range(T), np.dot(wts,wf)/(LA.norm(wts,axis=1)*LA.norm(wf)), '-')
-  #plt.plot(range(T), LA.norm(wts,axis=1), '-')
-  #plt.plot(range(T), np.asarray(range(T))**(1./2)*P/LA.norm(wf)/R, '-')
+  plt.plot(range(T), LA.norm(wts,axis=1), '-')
+  plt.plot(range(T), np.asarray(range(T))**(1./2)*P/LA.norm(wf)/R, '-')
   plt.show()
 
 def Q15_17():
@@ -161,7 +163,7 @@ def Q18(X, Y, XT, YT, n = 2000):
   for i in range(n):
     random.shuffle(index)
     wts, pocket = PLA(X, Y, index = index, limit = 50)
-    mistakes = countMistake(XT, YT, wts[pocket])
+    mistakes = getMistakes(XT, YT, wts[pocket])
     error = error + float(mistakes)/XT.shape[0]
   return error/n
 
@@ -171,7 +173,7 @@ def Q19(X, Y, XT, YT, n = 2000):
   for i in range(n):
     random.shuffle(index)
     wts, pocket = PLA(X, Y, index = index, limit = 50)
-    mistakes = countMistake(XT, YT, wts[-1])
+    mistakes = getMistakes(XT, YT, wts[-1])
     error = error + float(mistakes)/XT.shape[0]
   return error/n
 
@@ -181,7 +183,7 @@ def Q20(X, Y, XT, YT, n = 2000):
   for i in range(n):
     random.shuffle(index)
     wts, pocket = PLA(X, Y, index = index, limit = 100)
-    mistakes = countMistake(XT, YT, wts[pocket])
+    mistakes = getMistakes(XT, YT, wts[pocket])
     error = error + float(mistakes)/XT.shape[0]
   return error/n
 
@@ -194,9 +196,9 @@ def Q18_20():
   XT = dataT['X'] # t*k
   YT = dataT['Y'] # t*1
 
-  print Q18(X, Y, XT, YT, 200)
-  print Q19(X, Y, XT, YT, 200)
-  print Q20(X, Y, XT, YT, 200)
+  print Q18(X, Y, XT, YT, 2000)
+  print Q19(X, Y, XT, YT, 2000)
+  print Q20(X, Y, XT, YT, 2000)
 
 
 def main():
@@ -207,7 +209,7 @@ def main():
   
   Q15_17()
 
-  Q18_20()
+  #Q18_20()
 
 if __name__ == '__main__':
   main()
