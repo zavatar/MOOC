@@ -10,6 +10,7 @@ def flips(Y, p):
 
 def generator(n):
   X = 2*np.random.rand(n)-1
+  X.sort()
   Y = np.sign(X)
   Y = flips(Y, 0.2)
   return X, Y
@@ -18,7 +19,10 @@ def desicionStump(X, Y):
   Ein = len(Y)
   Theta = 0
   S = 1
-  for theta in X:
+  for i in range(len(Y)+1):
+    if i == 0: theta = X[0]-1
+    elif i == len(Y): theta = X[-1]+1
+    else: theta = (X[i-1] + X[i]) / 2
     Ein1 = len(Y[np.sign(X - theta) != Y])
     Ein2 = len(Y[-np.sign(X - theta) != Y])
     if Ein2 < Ein1:
@@ -31,17 +35,16 @@ def desicionStump(X, Y):
       Ein = ein
       Theta = theta
       S = s
-  return Theta, S, float(Ein)/len(Y)
+  Eout = 0.5 + 0.3 * S * (abs(Theta)-1)
+  return Theta, S, float(Ein)/len(Y), Eout
 
 def Q17_18():
   avgEin = 0
   avgEout = 0
   for i in range(5000):
     X, Y = generator(20)
-    theta, s, Ein = desicionStump(X, Y)
+    theta, s, Ein, Eout = desicionStump(X, Y)
     avgEin = avgEin + Ein
-    varX, varY = generator(20)
-    Eout = len(varY[s*np.sign(varX - theta) != varY])/float(len(varY))
     avgEout = avgEout + Eout
   print avgEin/5000, avgEout/5000
 
